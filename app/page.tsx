@@ -141,12 +141,17 @@ export default function Home() {
 
   // Toggle task completion
   const toggleTask = (id: string) => {
-    console.log('Toggling task:', id);
     setTasks(prevTasks => {
       const newTasks = prevTasks.map(task => 
         task.id === id ? { ...task, completed: !task.completed } : task
       );
-      console.log('New tasks state:', newTasks);
+      
+      // Play meow sound when completing a task
+      if (newTasks.find(task => task.id === id)?.completed) {
+        const audio = new Audio("/sounds/meow.mp3");
+        audio.play().catch((error) => console.error("Error playing sound:", error));
+      }
+      
       return newTasks;
     });
   };
