@@ -71,7 +71,7 @@ export async function upsertUserData(userData: Partial<UserData>) {
   const completeData: UserData = {
     user_id: USER_ID,
     tasks: userData.tasks || initialTasks,
-    streak: userData.streak || 0,
+    streak: typeof userData.streak === 'number' ? userData.streak : 0,
     last_reset_date: userData.last_reset_date || new Date().toDateString(),
     all_tasks_completed: userData.all_tasks_completed || false,
   };

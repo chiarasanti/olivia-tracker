@@ -41,6 +41,7 @@ export default function Home() {
     const loadData = async () => {
       try {
         const data = await fetchUserData();
+        console.log("Loaded initial data from Supabase:", data);
         if (data) {
           setTasks(data.tasks || initialTasks);
           setStreak(data.streak || 0);
@@ -48,7 +49,7 @@ export default function Home() {
           setAllTasksCompleted(data.all_tasks_completed || false);
         }
       } catch (error) {
-        console.error('Error loading data:', error);
+        console.error("Error loading data:", error);
       } finally {
         setLoading(false);
       }
@@ -61,14 +62,16 @@ export default function Home() {
     if (!loading) {
       const saveData = async () => {
         try {
-          await upsertUserData({
+          const dataToSave = {
             tasks,
             streak,
             last_reset_date: lastResetDate,
             all_tasks_completed: allTasksCompleted,
-          });
+          };
+          console.log("Saving data to Supabase:", dataToSave);
+          await upsertUserData(dataToSave);
         } catch (error) {
-          console.error('Error saving data:', error);
+          console.error("Error saving data:", error);
         }
       };
       saveData();
@@ -82,22 +85,25 @@ export default function Home() {
   // Check for all tasks completed
   useEffect(() => {
     const allCompleted = tasks.every((task) => task.completed);
+    const today = new Date().toDateString();
 
     // Only update if the state is changing from incomplete to complete
     if (allCompleted && !allTasksCompleted) {
-      const today = new Date().toDateString();
+      console.log("All tasks completed, current streak:", streak);
       
-      // Only increment streak if this is the first completion today
-      if (today !== lastResetDate) {
-        setStreak((prevStreak) => prevStreak + 1);
-        setLastResetDate(today);
-      }
+      // Increment streak when all tasks are completed
+      setStreak((prevStreak) => {
+        const newStreak = prevStreak + 1;
+        console.log("Incrementing streak to:", newStreak);
+        return newStreak;
+      });
       
+      // Update completion state
       setAllTasksCompleted(true);
       setShowConfetti(true);
       setTimeout(() => setShowConfetti(false), 3000);
     }
-  }, [tasks, allTasksCompleted, lastResetDate]);
+  }, [tasks, allTasksCompleted]);
 
   // Check if we need to reset tasks (new day after 3AM)
   useEffect(() => {
@@ -106,13 +112,16 @@ export default function Home() {
       const currentDate = now.toDateString();
       const currentHour = now.getHours();
 
-      // If it's a new day and past 3AM, reset tasks and check streak
+      // If it's a new day and past 3AM, reset tasks
       if (currentDate !== lastResetDate && currentHour >= 3) {
+        console.log("Resetting tasks at 3AM");
+
         // If tasks weren't completed yesterday, reset streak
         if (!allTasksCompleted) {
+          console.log("Tasks not completed yesterday, resetting streak to 0");
           setStreak(0);
         }
-        
+
         // Reset all tasks and completion state
         setTasks(initialTasks);
         setAllTasksCompleted(false);
@@ -141,17 +150,19 @@ export default function Home() {
 
   // Toggle task completion
   const toggleTask = (id: string) => {
-    setTasks(prevTasks => {
-      const newTasks = prevTasks.map(task => 
+    setTasks((prevTasks) => {
+      const newTasks = prevTasks.map((task) =>
         task.id === id ? { ...task, completed: !task.completed } : task
       );
-      
+
       // Play meow sound when completing a task
-      if (newTasks.find(task => task.id === id)?.completed) {
+      if (newTasks.find((task) => task.id === id)?.completed) {
         const audio = new Audio("/sounds/meow.mp3");
-        audio.play().catch((error) => console.error("Error playing sound:", error));
+        audio
+          .play()
+          .catch((error) => console.error("Error playing sound:", error));
       }
-      
+
       return newTasks;
     });
   };
@@ -168,14 +179,15 @@ export default function Home() {
 
   // Register service worker
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then(registration => {
-            console.log('ServiceWorker registration successful');
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker
+          .register("/sw.js")
+          .then((registration) => {
+            console.log("ServiceWorker registration successful");
           })
-          .catch(err => {
-            console.log('ServiceWorker registration failed: ', err);
+          .catch((err) => {
+            console.log("ServiceWorker registration failed: ", err);
           });
       });
     }
@@ -184,8 +196,8 @@ export default function Home() {
   // If all tasks are completed, show the congratulations screen
   if (allTasksCompleted) {
     return (
-      <main className="flex overflow-hiddenflex-col items-center justify-center bg-[#FED6DF] text-[#7358D5]">
-        <div className="w-full max-w-md border-8 border-[#C4B4FF] p-6 relative h-screen flex justify-center items-center">
+      <main className="flex overflow-hidden flex-col items-center justify-center bg-[#FED6DF] text-[#7358D5]">
+        <div className="w-full max-w-md border-8 border-[#C4B4FF] p-6 relative h-screen flex flex-col justify-center items-center">
           {/* Grid background */}
           <div className="absolute inset-0 grid grid-cols-5 grid-rows-6">
             {Array.from({ length: 36 }).map((_, i) => (
@@ -194,8 +206,11 @@ export default function Home() {
           </div>
 
           {/* Congratulations screen */}
-          <div className="relative z-10">
+          <div className="relative z-10 flex flex-col items-center">
             <CongratulationsScreen streak={streak} />
+            <p className="mt-8 text-xl font-pixel text-center">
+              Tasks will reset automatically at 3AM
+            </p>
           </div>
         </div>
       </main>
@@ -204,7 +219,11 @@ export default function Home() {
 
   // Show loading spinner/message while loading
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center text-2xl font-pixel text-[#7358D5]">Loading...</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center text-2xl font-pixel text-[#7358D5]">
+        Loading...
+      </div>
+    );
   }
 
   // Otherwise show the normal task list
