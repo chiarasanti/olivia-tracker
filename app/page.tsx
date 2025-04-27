@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useLocalStorage } from "./hooks/use-local-storage";
 import { Cat } from "./components/cat";
 import { Heart } from "./components/heart";
 import { PixelConfetti } from "./components/pixel-confetti";
@@ -33,9 +32,7 @@ export default function Home() {
   const [pulseHeart, setPulseHeart] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [allTasksCompleted, setAllTasksCompleted] = useState(false);
-  const [lastCompletedTask, setLastCompletedTask] = useState<string | null>(
-    null
-  );
+  const [lastCompletedTask, setLastCompletedTask] = useState<string | null>(null);
   const [catShake, setCatShake] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -64,7 +61,6 @@ export default function Home() {
     if (!loading) {
       const saveData = async () => {
         try {
-          console.log('Saving data:', { tasks, streak, lastResetDate, allTasksCompleted });
           await upsertUserData({
             tasks,
             streak,
