@@ -131,7 +131,7 @@ export default function Home() {
   // If all tasks are completed, show the congratulations screen
   if (allTasksCompleted) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center bg-[#FED6DF] text-[#7358D5]">
+      <main className="flex flex-col items-center justify-center bg-[#FED6DF] text-[#7358D5]">
         <div className="w-full max-w-md border-8 border-[#C4B4FF] p-6 relative h-screen max-h-[1450px] flex justify-center items-center">
           {/* Grid background */}
           <div className="absolute inset-0 grid grid-cols-5 grid-rows-6">
@@ -151,7 +151,7 @@ export default function Home() {
 
   // Otherwise show the normal task list
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-[#FED6DF] text-[#7358D5]">
+    <main className="flex flex-col items-center justify-center bg-[#FED6DF] text-[#7358D5]">
       <div className="w-full max-w-md border-8 border-[#C4B4FF] p-6 relative h-screen max-h-[1450px]">
         {/* Grid background */}
 
