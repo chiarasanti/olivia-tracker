@@ -7,6 +7,7 @@ import { Cat } from "./components/cat";
 import { Heart } from "./components/heart";
 import { PixelConfetti } from "./components/pixel-confetti";
 import { CongratulationsScreen } from "./components/congratulations-screen";
+import { fetchUserData, upsertUserData } from "@/lib/userDataApi";
 
 // Define the task type
 interface Task {
@@ -26,26 +27,57 @@ const initialTasks: Task[] = [
 ];
 
 export default function Home() {
-  // State for tasks, streak, and last reset date
-  const [tasks, setTasks] = useLocalStorage<Task[]>(
-    "olivia-tasks",
-    initialTasks
-  );
-  const [streak, setStreak] = useLocalStorage<number>("olivia-streak", 0);
-  const [lastResetDate, setLastResetDate] = useLocalStorage<string>(
-    "olivia-last-reset",
-    new Date().toDateString()
-  );
+  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [streak, setStreak] = useState(0);
+  const [lastResetDate, setLastResetDate] = useState(new Date().toDateString());
   const [pulseHeart, setPulseHeart] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
-  const [allTasksCompleted, setAllTasksCompleted] = useLocalStorage<boolean>(
-    "olivia-all-completed",
-    false
-  );
+  const [allTasksCompleted, setAllTasksCompleted] = useState(false);
   const [lastCompletedTask, setLastCompletedTask] = useState<string | null>(
     null
   );
   const [catShake, setCatShake] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Load data from Supabase on mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const data = await fetchUserData();
+        if (data) {
+          setTasks(data.tasks || initialTasks);
+          setStreak(data.streak || 0);
+          setLastResetDate(data.last_reset_date || new Date().toDateString());
+          setAllTasksCompleted(data.all_tasks_completed || false);
+        }
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
+  // Save to Supabase whenever data changes
+  useEffect(() => {
+    if (!loading) {
+      const saveData = async () => {
+        try {
+          console.log('Saving data:', { tasks, streak, lastResetDate, allTasksCompleted });
+          await upsertUserData({
+            tasks,
+            streak,
+            last_reset_date: lastResetDate,
+            all_tasks_completed: allTasksCompleted,
+          });
+        } catch (error) {
+          console.error('Error saving data:', error);
+        }
+      };
+      saveData();
+    }
+  }, [tasks, streak, lastResetDate, allTasksCompleted, loading]);
 
   // Calculate remaining tasks
   const remainingTasks = tasks.filter((task) => !task.completed).length;
@@ -57,14 +89,19 @@ export default function Home() {
 
     // Only update if the state is changing from incomplete to complete
     if (allCompleted && !allTasksCompleted) {
+      const today = new Date().toDateString();
+      
+      // Only increment streak if this is the first completion today
+      if (today !== lastResetDate) {
+        setStreak((prevStreak) => prevStreak + 1);
+        setLastResetDate(today);
+      }
+      
       setAllTasksCompleted(true);
       setShowConfetti(true);
       setTimeout(() => setShowConfetti(false), 3000);
-
-      // Increment streak when all tasks are completed for the first time
-      setStreak((prevStreak) => prevStreak + 1);
     }
-  }, [tasks, allTasksCompleted, setAllTasksCompleted, setStreak]);
+  }, [tasks, allTasksCompleted, lastResetDate]);
 
   // Check if we need to reset tasks (new day after 3AM)
   useEffect(() => {
@@ -73,8 +110,13 @@ export default function Home() {
       const currentDate = now.toDateString();
       const currentHour = now.getHours();
 
-      // If it's a new day and past 3AM, reset tasks
+      // If it's a new day and past 3AM, reset tasks and check streak
       if (currentDate !== lastResetDate && currentHour >= 3) {
+        // If tasks weren't completed yesterday, reset streak
+        if (!allTasksCompleted) {
+          setStreak(0);
+        }
+        
         // Reset all tasks and completion state
         setTasks(initialTasks);
         setAllTasksCompleted(false);
@@ -87,7 +129,7 @@ export default function Home() {
     // Check for reset every minute
     const interval = setInterval(checkForReset, 60000);
     return () => clearInterval(interval);
-  }, [tasks, lastResetDate, setTasks, setLastResetDate, setAllTasksCompleted]);
+  }, [tasks, lastResetDate, allTasksCompleted]);
 
   // Effect to handle heart pulse animation
   useEffect(() => {
@@ -103,19 +145,14 @@ export default function Home() {
 
   // Toggle task completion
   const toggleTask = (id: string) => {
-    const task = tasks.find((t) => t.id === id);
-    const newCompletedState = !task?.completed;
-
-    setTasks(
-      tasks.map((task) =>
-        task.id === id ? { ...task, completed: newCompletedState } : task
-      )
-    );
-
-    // Set the last completed task to trigger the animation
-    if (newCompletedState) {
-      setLastCompletedTask(id);
-    }
+    console.log('Toggling task:', id);
+    setTasks(prevTasks => {
+      const newTasks = prevTasks.map(task => 
+        task.id === id ? { ...task, completed: !task.completed } : task
+      );
+      console.log('New tasks state:', newTasks);
+      return newTasks;
+    });
   };
 
   // Handle cat click for shake and angry meow
@@ -147,6 +184,11 @@ export default function Home() {
         </div>
       </main>
     );
+  }
+
+  // Show loading spinner/message while loading
+  if (loading) {
+    return <div className="flex min-h-screen items-center justify-center text-2xl font-pixel text-[#7358D5]">Loading...</div>;
   }
 
   // Otherwise show the normal task list
