@@ -158,7 +158,7 @@ export default function Home() {
         {/* Content */}
         <div className="relative z-10">
           {/* Cat and heart animation */}
-          <div className="flex justify-center flex-col items-center mb-2 relative !bg-[#EFBFC7] border-[#7358D5] border-l border-t border-r-4 border-b-4 p-4">
+          <div className="flex justify-center flex-col items-center mb-2 relative !bg-[#EFBFC7] border-[#7358D5] border-l border-t border-r-4 border-b-4 p-5">
             <div className="animate-float z-30">
               <Heart pulse={pulseHeart} />
               <Cat
@@ -178,7 +178,7 @@ export default function Home() {
           </div>
 
           {/* Stats */}
-          <div className="flex justify-between mb-6">
+          <div className="flex justify-between mb-7">
             <p className="text-base font-pixel">{streak} days streak</p>
             <p className="text-base font-pixel">
               {remainingTasks}/{totalTasks} remaining
