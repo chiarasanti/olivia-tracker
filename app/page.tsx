@@ -42,10 +42,29 @@ export default function Home() {
     "olivia-all-completed",
     false
   );
+  const [lastCompletedTask, setLastCompletedTask] = useState<string | null>(
+    null
+  );
+  const [catShake, setCatShake] = useState(false);
 
   // Calculate remaining tasks
   const remainingTasks = tasks.filter((task) => !task.completed).length;
   const totalTasks = tasks.length;
+
+  // Check for all tasks completed
+  useEffect(() => {
+    const allCompleted = tasks.every((task) => task.completed);
+
+    // Only update if the state is changing from incomplete to complete
+    if (allCompleted && !allTasksCompleted) {
+      setAllTasksCompleted(true);
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 3000);
+
+      // Increment streak when all tasks are completed for the first time
+      setStreak((prevStreak) => prevStreak + 1);
+    }
+  }, [tasks, allTasksCompleted, setAllTasksCompleted, setStreak]);
 
   // Check if we need to reset tasks (new day after 3AM)
   useEffect(() => {
@@ -56,16 +75,6 @@ export default function Home() {
 
       // If it's a new day and past 3AM, reset tasks
       if (currentDate !== lastResetDate && currentHour >= 3) {
-        // Check if all tasks were completed before reset
-        const allCompleted = tasks.every((task) => task.completed);
-
-        // Update streak based on completion
-        if (allCompleted) {
-          setStreak(streak + 1);
-        } else {
-          setStreak(0);
-        }
-
         // Reset all tasks and completion state
         setTasks(initialTasks);
         setAllTasksCompleted(false);
@@ -78,46 +87,45 @@ export default function Home() {
     // Check for reset every minute
     const interval = setInterval(checkForReset, 60000);
     return () => clearInterval(interval);
-  }, [
-    tasks,
-    streak,
-    lastResetDate,
-    setTasks,
-    setStreak,
-    setLastResetDate,
-    setAllTasksCompleted,
-  ]);
+  }, [tasks, lastResetDate, setTasks, setLastResetDate, setAllTasksCompleted]);
 
-  // Check for all tasks completed
+  // Effect to handle heart pulse animation
   useEffect(() => {
-    const allCompleted = tasks.every((task) => task.completed);
+    if (lastCompletedTask) {
+      setPulseHeart(true);
+      setTimeout(() => setPulseHeart(false), 1000);
 
-    // Only update if the state is changing from incomplete to complete
-    if (allCompleted && !allTasksCompleted) {
-      setAllTasksCompleted(true);
-      setShowConfetti(true);
-      setTimeout(() => setShowConfetti(false), 3000);
+      // Play meow sound
+      const audio = new Audio("/sounds/meow.mp3");
+      audio.play().catch((error) => console.log("Error playing sound:", error));
     }
-  }, [tasks, allTasksCompleted, setAllTasksCompleted]);
+  }, [lastCompletedTask]);
 
   // Toggle task completion
   const toggleTask = (id: string) => {
+    const task = tasks.find((t) => t.id === id);
+    const newCompletedState = !task?.completed;
+
     setTasks(
       tasks.map((task) =>
-        task.id === id ? { ...task, completed: !task.completed } : task
+        task.id === id ? { ...task, completed: newCompletedState } : task
       )
     );
 
-    // Trigger heart pulse animation and meow sound when a task is completed
-    const task = tasks.find((t) => t.id === id);
-    if (!task?.completed) {
-      setPulseHeart(true);
-      setTimeout(() => setPulseHeart(false), 1000);
-      
-      // Play meow sound
-      const audio = new Audio('/sounds/meow.mp3');
-      audio.play().catch(error => console.log('Error playing sound:', error));
+    // Set the last completed task to trigger the animation
+    if (newCompletedState) {
+      setLastCompletedTask(id);
     }
+  };
+
+  // Handle cat click for shake and angry meow
+  const handleCatClick = () => {
+    setCatShake(true);
+    const audio = new Audio("/sounds/angry-meow.mp3");
+    audio
+      .play()
+      .catch((error) => console.log("Error playing angry meow sound:", error));
+    setTimeout(() => setCatShake(false), 500);
   };
 
   // If all tasks are completed, show the congratulations screen
@@ -149,16 +157,14 @@ export default function Home() {
 
         {/* Content */}
         <div className="relative z-10">
-          {/* Header */}
-          <h1 className="text-5xl font-pixel text-center mb-8">
-            Olivia Tracker &lt;3
-          </h1>
-
           {/* Cat and heart animation */}
           <div className="flex justify-center flex-col items-center mb-4 relative !bg-[#EFBFC7] border-[#7358D5] border-l border-t border-r-4 border-b-4 p-8">
             <div className="animate-float z-30">
               <Heart pulse={pulseHeart} />
-              <Cat />
+              <Cat
+                className={catShake ? "animate-shake" : ""}
+                onClick={handleCatClick}
+              />
             </div>
             <div className="w-4 h-4 bg-primary absolute top-0 left-0 z-30" />
             <div className="w-4 h-4 bg-primary absolute bottom-0 left-0 z-30" />
@@ -172,7 +178,7 @@ export default function Home() {
           </div>
 
           {/* Stats */}
-          <div className="flex justify-between mb-12">
+          <div className="flex justify-between mb-8">
             <p className="text-base font-pixel">{streak} days streak</p>
             <p className="text-base font-pixel">
               {remainingTasks}/{totalTasks} remaining
