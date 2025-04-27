@@ -158,7 +158,7 @@ export default function Home() {
         {/* Content */}
         <div className="relative z-10">
           {/* Cat and heart animation */}
-          <div className="flex justify-center flex-col items-center mb-4 relative !bg-[#EFBFC7] border-[#7358D5] border-l border-t border-r-4 border-b-4 p-8">
+          <div className="flex justify-center flex-col items-center mb-2 relative !bg-[#EFBFC7] border-[#7358D5] border-l border-t border-r-4 border-b-4 p-4">
             <div className="animate-float z-30">
               <Heart pulse={pulseHeart} />
               <Cat
@@ -178,7 +178,7 @@ export default function Home() {
           </div>
 
           {/* Stats */}
-          <div className="flex justify-between mb-8">
+          <div className="flex justify-between mb-6">
             <p className="text-base font-pixel">{streak} days streak</p>
             <p className="text-base font-pixel">
               {remainingTasks}/{totalTasks} remaining
@@ -186,9 +186,9 @@ export default function Home() {
           </div>
 
           {/* Task list */}
-          <div className="space-y-4">
+          <div className="space-y-3">
             {tasks.map((task) => (
-              <div key={task.id} className="border-b border-white pb-4">
+              <div key={task.id} className="border-b border-white pb-3">
                 <div className="flex items-center space-x-3">
                   <Checkbox
                     id={task.id}
