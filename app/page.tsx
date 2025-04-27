@@ -166,6 +166,21 @@ export default function Home() {
     setTimeout(() => setCatShake(false), 500);
   };
 
+  // Register service worker
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(registration => {
+            console.log('ServiceWorker registration successful');
+          })
+          .catch(err => {
+            console.log('ServiceWorker registration failed: ', err);
+          });
+      });
+    }
+  }, []);
+
   // If all tasks are completed, show the congratulations screen
   if (allTasksCompleted) {
     return (
